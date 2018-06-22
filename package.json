@@ -1,0 +1,39 @@
+{
+  "name": "railroad-controller",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/railroad-editor/railroad-controller.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/railroad-editor/railroad-controller/issues"
+  },
+  "homepage": "https://github.com/railroad-editor/railroad-controller#readme",
+  "devDependencies": {
+    "babel-preset-env": "^1.7.0"
+  },
+  "dependencies": {
+    "aws-amplify": "^0.4.1",
+    "chalk": "^2.4.1",
+    "cli-table": "^0.3.1",
+    "dotenv": "^6.0.0",
+    "dotenv-expand": "^4.2.0",
+    "inquirer": "^6.0.0",
+    "moment": "^2.22.2",
+    "node-fetch": "^2.1.2",
+    "node-localstorage": "^1.3.1",
+    "node-window-polyfill": "^1.0.0",
+    "skyway-js": "https://github.com/railroad-editor/skyway-js-sdk.dist#master",
+    "skyway-js-sdk.dist": "https://github.com/railroad-editor/skyway-js-sdk.dist#master",
+    "window-or-global": "^1.0.1",
+    "wrtc": "^0.1.4",
+    "xhr2": "^0.1.4"
+  }
+}
