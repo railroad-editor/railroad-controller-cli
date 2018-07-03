@@ -31,7 +31,6 @@
     "node-localstorage": "^1.3.1",
     "node-window-polyfill": "^1.0.0",
     "skyway-js": "https://github.com/railroad-editor/skyway-js-sdk.dist#master",
-    "skyway-js-sdk.dist": "https://github.com/railroad-editor/skyway-js-sdk.dist#master",
     "window-or-global": "^1.0.1",
     "wrtc": "^0.1.4",
     "xhr2": "^0.1.4"

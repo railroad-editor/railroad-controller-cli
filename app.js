@@ -27,9 +27,12 @@ const QUESTIONS = [
   }
 ];
 
-console.log(process.env)
+// console.log(process.env)
 
-const start = async () => {
+/**
+ * メインルーチン
+ */
+const main = async () => {
   const answers = await inquirer.prompt(QUESTIONS)
   // console.log( JSON.stringify(answers, null, "  ") );
 
@@ -110,125 +113,35 @@ const createPeer = (onOpen) => {
   });
 
   peer.on('open', id => {
-    console.log('Peer ID', id)
+    console.log('Opened: Peer ID', id)
     onOpen(id)
-    // SessionAPI.createSession('a', 'b', 'c').catch((e) => {
-    //   console.log(e)
-    //   console.log('faillll')
-    // })
   });
 
   // Await connections from others
-  peer.on('connection', c => {
-    console.log('connection')
-    c.on('open', () => handleOpen(c));
+  peer.on('connection', conn => {
+    console.log('Connected')
+    conn.on('open', () => onConnectionOpen(conn));
   });
 
-  peer.on('error', err => console.log(err));
+  peer.on('error', err => {
+    console.log(chalk.red(err))
+  });
 
-// function connectTo() {
-//   const c = peer.connect("BpCsQLfpaZB34ZuA", {
-//     label:    'chat',
-//     metadata: {message: 'hi i want to chat with you!'},
-//   });
-//   c.on('open', () => { handleOpen(c); });
-// }
-
-  function handleOpen(c) {
-    c.on('data', data => {
-      console.log('data', data)
+  const onConnectionOpen = (conn) => {
+    conn.on('data', data => {
+      console.log(chalk.green(`DATA: ${data}`))   //`
     });
-    c.on('close', () => {
-      console.log('connection closed.')
+    conn.on('close', () => {
+      console.log('Connection closed.')
     });
-    c.on('error', err => alert(err));
-// connectedPeers[c.remoteId] = 1;
+    conn.on('error', err => {
+      console.log(chalk.red(err))
+    });
   }
-
 }
 
 
-// Connect to a peer
-// $('#connect').on('submit', e => {
-//   e.preventDefault();
-//   const requestedPeer = $('#rid').val();
-//   if (!connectedPeers[requestedPeer]) {
-//     // Create 2 connections, one labelled chat and another labelled file.
-//     const c = peer.connect(requestedPeer, {
-//       label:    'chat',
-//       metadata: {message: 'hi i want to chat with you!'},
-//     });
-//
-//     c.on('open', () => {
-//       connect(c);
-//       connectedPeers[requestedPeer] = 1;
-//     });
-//
-//     c.on('error', err => alert(err));
-//
-//     const f = peer.connect(requestedPeer, {label: 'file', reliable: true});
-//
-//     f.on('open', () => {
-//       connect(f);
-//     });
-//
-//     f.on('error', err => alert(err));
-//   }
-// });
-//
-// // Close a connection.
-// $('#close').on('click', () => {
-//   eachActiveConnection(c => {
-//     c.close();
-//   });
-// });
-//
-// // Send a chat message to all active connections.
-// $('#send').on('submit', e => {
-//   e.preventDefault();
-//   // For each active connection, send the message.
-//   const msg = $('#text').val();
-//   eachActiveConnection((c, $c) => {
-//     if (c.label === 'chat') {
-//       c.send(msg);
-//       $c.find('.messages').append('<div><span class="you">You: </span>' + msg
-//         + '</div>');
-//     }
-//   });
-//   $('#text').val('');
-//   $('#text').focus();
-// });
-//
-// // Show browser version
-// $('#browsers').text(navigator.userAgent);
-//
-// // Make sure things clean up properly.
-// window.onunload = window.onbeforeunload = function(e) {
-//   if (!!peer && !peer.destroyed) {
-//     peer.destroy();
-//   }
-// };
-//
-// // Handle a connection object.
-//
-// // Goes through each active peer and calls FN on its connections.
-// function eachActiveConnection(fn) {
-//   const actives = $('.active');
-//   const checkedIds = {};
-//   actives.each((_, el) => {
-//     const peerId = $(el).attr('id');
-//     if (!checkedIds[peerId]) {
-//       const conns = peer.connections[peerId];
-//       for (let i = 0, ii = conns.length; i < ii; i += 1) {
-//         const conn = conns[i];
-//         fn(conn, $(el));
-//       }
-//     }
-//     checkedIds[peerId] = 1;
-//   });
-// }
 
-
-start()
+main()
 
 
