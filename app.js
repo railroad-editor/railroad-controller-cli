@@ -9,6 +9,7 @@ const inquirer = require('inquirer');
 const chalk = require('chalk');
 const Table = require('cli-table');
 const moment = require('moment')
+const SerialPort = require('serialport');
 require('dotenv').config()
 // const dotenvExpand = require('dotenv-expand')
 // dotenvExpand(myEnv)
@@ -33,7 +34,27 @@ const QUESTIONS = [
  * メインルーチン
  */
 const main = async () => {
-  const answers = await inquirer.prompt(QUESTIONS)
+
+  // console.log('Searching arduino...')
+  const ports = await SerialPort.list()
+  const arduinoPort = ports.find(port => port.manufacturer && port.manufacturer.startsWith('Arduino'))
+
+  if (! arduinoPort) {
+    console.log(chalk.red('Arduino not found!'))
+    console.log(chalk.red('Please connect Arduino first.'))
+    process.exit(1)
+  }
+
+  // シリアルポートの初期化
+  const serialPort = new SerialPort(arduinoPort.comName, { baudRate: 9600 });
+  serialPort.on('data', (data) => {
+    process.stdout.write(data.toString())
+  });
+
+  console.log(chalk.green(`Arduino detected: ${arduinoPort.comName}`))
+
+
+  // const answers = await inquirer.prompt(QUESTIONS)
   // console.log( JSON.stringify(answers, null, "  ") );
 
   const userInfo = await Amplify.Auth.signIn(answers['email'], answers['password'])
@@ -52,9 +73,8 @@ const main = async () => {
 
   createTable(layouts)
 
-  createPeer(createSession.bind(this, userId, layouts))
+  createPeer(createSession.bind(this, userId, layouts), serialPort)
 
-  // createSession(userId, layouts, 1)
 }
 
 /**
@@ -104,7 +124,7 @@ const createSession = async (userId, layouts, peerId) => {
 /**
  * SkyWayに接続する
  */
-const createPeer = (onOpen) => {
+const createPeer = (onOpen, serialPort) => {
 // Connect to SkyWay, have server assign an ID instead of providing one
 // Showing off some of the configs available with SkyWay:).
   const peer = new Peer({
@@ -119,7 +139,8 @@ const createPeer = (onOpen) => {
 
   // Await connections from others
   peer.on('connection', conn => {
-    console.log('Connected')
+    console.log('Connecting...')
+    console.log('Remote Peer ID', conn.remoteId)
     conn.on('open', () => onConnectionOpen(conn));
   });
 
@@ -128,8 +149,12 @@ const createPeer = (onOpen) => {
   });
 
   const onConnectionOpen = (conn) => {
+    console.log(chalk.green('Connected.'))
     conn.on('data', data => {
       console.log(chalk.green(`DATA: ${data}`))   //`
+      // echo back
+      conn.send(data)
+      serialPort.write(data)
     });
     conn.on('close', () => {
       console.log('Connection closed.')
