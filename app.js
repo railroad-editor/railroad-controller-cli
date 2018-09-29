@@ -18,7 +18,7 @@ require('dotenv').config()
 
 // console.log(process.env)
 
-const CONFIG_FILE = 'railroad-controller.conf'
+const CONFIG_FILE = 'railroad-controller.json'
 
 var CONFIG = {
   credential: {
