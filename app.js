@@ -10,32 +10,47 @@ const chalk = require('chalk');
 const Table = require('cli-table');
 const moment = require('moment')
 const SerialPort = require('serialport');
+const fs = require('fs');
 require('dotenv').config()
 // const dotenvExpand = require('dotenv-expand')
 // dotenvExpand(myEnv)
 
 
-const QUESTIONS = [
-  {
-    type: "input",
-    name: "email",
-    message: "Email Address"
-  },
-  {
-    type: "password",
-    name: "password",
-    message: "Password"
-  }
-];
-
 // console.log(process.env)
 
-/**
- * メインルーチン
- */
-const main = async () => {
+const CONFIG_FILE = 'railroad-controller.conf'
 
-  // console.log('Searching arduino...')
+var CONFIG = {
+  credential: {
+    email: null,
+    password: null
+  },
+  layout: {
+    id: null,
+    name: null
+  }
+}
+
+const saveConfig = () => {
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(CONFIG))
+}
+
+const loadConfig = () => {
+  try {
+    fs.statSync(CONFIG_FILE)
+  } catch (err) {
+    return
+  }
+
+  CONFIG = JSON.parse(fs.readFileSync(CONFIG_FILE))
+}
+
+
+/**
+ * このデバイスに接続されたArduinoを検索し、そのSerialPortを返す
+ * @returns {Promise<SerialPort|*>}
+ */
+const findArduino = async () => {
   const ports = await SerialPort.list()
   const arduinoPort = ports.find(port => port.manufacturer && port.manufacturer.startsWith('Arduino'))
 
@@ -52,35 +67,74 @@ const main = async () => {
   });
 
   console.log(chalk.green(`Arduino detected: ${arduinoPort.comName}`))
+  return serialPort
+}
 
 
-  // const answers = await inquirer.prompt(QUESTIONS)
-  // console.log( JSON.stringify(answers, null, "  ") );
+/**
+ * Railroad-Editorにログインする
+ * @returns {Promise<String>} User ID (Email)
+ */
+const login = async () => {
 
-  const userInfo = await Amplify.Auth.signIn(answers['email'], answers['password'])
+  // Credentialが設定ファイルからロードできたらそれを使う
+  // そうでなければプロンプトを表示
+  let credential
+  if (CONFIG.credential.email) {
+    credential = CONFIG.credential
+  } else {
+    credential = await inquirer.prompt([
+      {
+        type: "input",
+        name: "email",
+        message: "Email Address"
+      },
+      {
+        type: "password",
+        name: "password",
+        message: "Password"
+      }
+    ])
+  }
+
+  const userInfo = await Amplify.Auth.signIn(credential.email, credential.password)
     .catch((e) => {
       console.log(chalk.red('Login failed!'))
       console.log(chalk.red('Please confirm the email address and password.'))
       process.exit(1)
     })
 
-  const userId = userInfo.username
-
   console.log(chalk.green('Login succeeded.'))
-  // console.log(userInfo)
 
-  const layouts = await LayoutAPI.fetchLayoutList(userId)
+  if (! CONFIG.credential.email) {
+    // 自動ログインを設定するか聞く
+    const answer = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "enableAutoLogin",
+        message: "Do you want to enable auto login by this account?"
+      }
+    ])
 
-  createTable(layouts)
+    if (answer.enableAutoLogin) {
+      CONFIG.credential.email = credential.email
+      CONFIG.credential.password = credential.password
+      saveConfig()
+    }
+  }
 
-  createPeer(createSession.bind(this, userId, layouts), serialPort)
-
+  return userInfo.username
 }
 
+
 /**
- * レイアウトテーブルを出力する
+ * レイアウトのリストをテーブルとして表示し、その一つをユーザーに選択させる。
+ * @param userId
+ * @returns {Promise<String>} Layout ID
  */
-const createTable = (layouts) => {
+const selectLayout = async (userId) => {
+  const layouts = await LayoutAPI.fetchLayoutList(userId)
+
   const nameColumnWidth = Math.max(...layouts.map(layout => layout.name.length)) + 3
 
   const table = new Table({
@@ -93,24 +147,42 @@ const createTable = (layouts) => {
 
   console.log('Your Layouts:')
   console.log(table.toString())
+
+  // Layout IDが設定ファイルからロードできたらそれを使う
+  // そうでなければプロンプトを表示
+  let layoutId
+  if (CONFIG.layout.id) {
+    layoutId = CONFIG.layout.id
+    console.log(chalk.green(`Use layout ${CONFIG.layout.name}`))
+  } else {
+    const answers = await inquirer.prompt([
+      {
+        type: "number",
+        name: "id",
+        message: "Input Layout ID to connect"
+      },
+      {
+        type: "confirm",
+        name: "userAsDefault",
+        message: "Do you want to use this layout as default?"
+      }
+    ])
+    if (answers.userAsDefault) {
+      layoutId = layouts[answers.id].id
+      CONFIG.layout.id = layoutId
+      CONFIG.layout.name = layouts[answers.id].name
+      saveConfig()
+    }
+  }
+
+  return layoutId
 }
+
 
 /**
  * セッションを作成する
  */
-const createSession = async (userId, layouts, peerId) => {
-  const QUESTIONS = [
-    {
-      type: "number",
-      name: "id",
-      message: "Input Layout ID to connect"
-    }
-  ];
-
-  const answers = await inquirer.prompt(QUESTIONS)
-  // console.log( JSON.stringify(answers, null, "  ") );
-
-  const layoutId = layouts[answers.id].id
+const createSession = async (userId, layoutId, peerId) => {
 
   await SessionAPI.createSession(userId, layoutId, peerId)
     .catch((e) => {
@@ -154,7 +226,7 @@ const createPeer = (onOpen, serialPort) => {
       console.log(chalk.green(`DATA: ${data}`))   //`
       // echo back
       conn.send(data)
-      serialPort.write(data)
+      serialPort.write(data + "\n")
     });
     conn.on('close', () => {
       console.log('Connection closed.')
@@ -163,6 +235,24 @@ const createPeer = (onOpen, serialPort) => {
       console.log(chalk.red(err))
     });
   }
+}
+
+
+/**
+ * メインルーチン
+ */
+const main = async () => {
+
+  loadConfig()
+
+  const serialPort = await findArduino()
+
+  const userId = await login()
+
+  const layoutId = await selectLayout(userId)
+
+  createPeer(createSession.bind(this, userId, layoutId), serialPort)
+
 }
 
 
