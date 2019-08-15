@@ -1,8 +1,9 @@
 const WebRTC = require('wrtc')
-RTCPeerConnection = WebRTC.RTCPeerConnection
-RTCIceCandidate = WebRTC.RTCIceCandidate;
-RTCSessionDescription = WebRTC.RTCSessionDescription;
-RTCDataChannel = WebRTC.RTCDataChannel;
-MediaStream = {}
 
-module.exports = WebRTC
+// define global variables
+global.RTCPeerConnection = WebRTC.RTCPeerConnection
+global.RTCIceCandidate = WebRTC.RTCIceCandidate;
+global.RTCSessionDescription = WebRTC.RTCSessionDescription;
+global.RTCDataChannel = WebRTC.RTCDataChannel;
+global.MediaStream = {}
+
