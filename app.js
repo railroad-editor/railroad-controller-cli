@@ -16,13 +16,13 @@ const {saveConfig, loadConfig} = require('./config');
 
 require('dotenv').config();
 
-
-commander.option('-n, --no-arduino', 'Arduino connection');
+commander.option('-n, --no-arduino', 'connects to Railroad Editor without Arduino.');
+commander.option('-i, --init', 'initializes configuration file, ignoring existing one.');
 commander.parse(process.argv);
 
 const main = async () => {
 
-  let config = loadConfig()
+  let config = loadConfig(commander.init)
 
   let serialPort = null
   if (commander.arduino) {
@@ -34,7 +34,6 @@ const main = async () => {
 
   createPeer(createSession.bind(this, userId, layoutId), serialPort)
 }
-
 
 
 /**

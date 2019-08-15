@@ -23,7 +23,10 @@ exports.saveConfig = (config) => {
   fs.writeFileSync(configPath, JSON.stringify(config))
 }
 
-exports.loadConfig = () => {
+exports.loadConfig = (initializes) => {
+  if (initializes) {
+    return EMPTY_CONFIG
+  }
   let configPath = path.join(getHomeDir(), CONFIG_FILE)
   try {
     fs.statSync(configPath)
