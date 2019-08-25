@@ -1,18 +1,14 @@
-window = {}
-var LocalStorage = require('node-localstorage').LocalStorage;
-window.localStorage = new LocalStorage('./.localStorage');
-window.addEventListener = function() {}
+global.window = global.window || {}
+const LocalStorage = require('node-localstorage').LocalStorage;
+global.window.localStorage = new LocalStorage('./.localStorage');
+global.window.addEventListener = function() {}
 
-var Amplify = require("aws-amplify");
-var aws_exports = require('./aws-exports');
+const AWS = require('aws-sdk')
+const Amplify = require("aws-amplify");
 
-const API_ENDPOINTS = {
-  beta: "https://foo866bgvk.execute-api.ap-northeast-1.amazonaws.com/beta",
-  prod: "https://foo866bgvk.execute-api.ap-northeast-1.amazonaws.com/prod",
-}
+// prevent to load local AWS credentials
+AWS.config.credentials = null
 
-aws_exports.aws_cloud_logic_custom[0].endpoint = API_ENDPOINTS['beta']
-Amplify.default.configure(aws_exports)
 
 module.exports = Amplify
 

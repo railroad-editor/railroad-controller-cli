@@ -1,9 +1,6 @@
-global.window = {}
-require('./xhr2')
-require('./wrtc')
-fetch = require('node-fetch')
+const Peer = require('./skyway-js');
 const Amplify = require('./aws-amplify')
-const Peer = require('skyway-js');
+const aws_exports = require('./aws-exports');
 const SessionAPI = require('./apis/session')
 const LayoutAPI = require('./apis/layout')
 const inquirer = require('inquirer');
@@ -16,11 +13,14 @@ const {saveConfig, loadConfig} = require('./config');
 
 require('dotenv').config();
 
-commander.option('-n, --no-arduino', 'connects to Railroad Editor without Arduino.');
-commander.option('-i, --init', 'initializes configuration file, ignoring existing one.');
+commander.option('-n, --no-arduino', 'Connects to Railroad-Editor without Arduino.');
+commander.option('-i, --init', 'Initializes configuration file, ignoring existing one.');
+commander.option('-e, --env <env-name>', 'Environment name. For development purpose only.', 'prod');
 commander.parse(process.argv);
 
 const main = async () => {
+
+  loadAwsAmplifyConfig(commander.env)
 
   let config = loadConfig(commander.init)
 
@@ -33,6 +33,11 @@ const main = async () => {
   const layoutId = await selectLayout(userId, config)
 
   createPeer(createSession.bind(this, userId, layoutId), serialPort)
+}
+
+
+const loadAwsAmplifyConfig = (env) => {
+  Amplify.default.configure(aws_exports[env])
 }
 
 
@@ -87,13 +92,13 @@ const login = async (config) => {
     ])
   }
 
-  const userInfo = await Amplify.Auth.signIn(credential.email, credential.password)
+  await Amplify.Auth.signIn(credential.email, credential.password)
     .catch((e) => {
       console.log(chalk.red('Login failed!'))
       console.log(chalk.red('Please confirm the email address and password.'))
       process.exit(1)
     })
-
+  const userInfo = await Amplify.Auth.currentUserInfo()
   console.log(chalk.green('Login succeeded.'))
 
   if (! config.credential.email) {
@@ -113,7 +118,7 @@ const login = async (config) => {
     }
   }
 
-  return userInfo.username
+  return userInfo.id
 }
 
 

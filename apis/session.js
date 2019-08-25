@@ -3,15 +3,15 @@ const moment = require("moment");
 
 
 const fetchSessions = async (userId) => {
-  return await Amplify.API.get('Layout', `/users/${userId}/sessions`, {headers: {}})
+  return await Amplify.API.get('session', `/users/${userId}/sessions`, {headers: {}})
 }
 
 const fetchSession = async (userId, layoutId) => {
-  return await Amplify.API.get('Layout', `/users/${userId}/sessions/${layoutId}`, {headers: {}})
+  return await Amplify.API.get('session', `/users/${userId}/sessions/${layoutId}`, {headers: {}})
 }
 
 const createSession = async (userId, layoutId, peerId) => {
-  return await Amplify.API.put('Layout', `/users/${userId}/sessions/${layoutId}`, {
+  return await Amplify.API.put('session', `/users/${userId}/sessions/${layoutId}`, {
     headers: {},
     body: {
       peerId,
@@ -20,7 +20,7 @@ const createSession = async (userId, layoutId, peerId) => {
 }
 
 const deleteSession =  async (userId, layoutId) => {
-  return await Amplify.API.del('Layout', `/users/${userId}/sessions/${layoutId}`, {headers: {}})
+  return await Amplify.API.del('session', `/users/${userId}/sessions/${layoutId}`, {headers: {}})
 }
 
 
